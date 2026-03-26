@@ -122,10 +122,11 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val >= 1_000_000 ? `Rp${(val/1_000_000).toFixed(1)}jt` : val >= 1_000 ? `Rp${(val/1_000).toFixed(0)}rb` : `Rp${val}`} />
                     <Tooltip 
                       contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', color: 'hsl(var(--foreground))' }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
+                      formatter={(val: number) => [formatCurrency(val), ""]}
                     />
                     <Area type="monotone" dataKey="income" stroke="hsl(var(--success))" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
                     <Area type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
