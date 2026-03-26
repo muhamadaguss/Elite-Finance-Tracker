@@ -1,0 +1,17 @@
+packages:
+  "recharts": "For advanced analytics and dashboard charts"
+  "date-fns": "For reliable date formatting and manipulation"
+  "framer-motion": "For stunning page transitions, glassmorphism micro-interactions, and modal animations"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For resolving Tailwind class conflicts"
+  "lucide-react": "For crisp, beautiful interface icons"
+
+images:
+  - path: "artifacts/finance-tracker/public/images/auth-bg.png"
+    description: "Deep dark navy and electric blue abstract gradient mesh, glassmorphism style, extremely high quality, 8k"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated API hooks from @workspace/api-client-react
+  - Defaulting to a forced dark mode premium fintech aesthetic
+  - Assuming API validates properly and returns standard ErrorResponse
