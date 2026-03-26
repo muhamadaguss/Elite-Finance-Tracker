@@ -1,9 +1,8 @@
 import { Router, type IRouter } from "express";
 import { db, transactionsTable, categoriesTable } from "@workspace/db";
 import { eq, and, sql, ilike, desc, count } from "drizzle-orm";
+import { z } from "zod";
 import {
-  CreateTransactionBody,
-  UpdateTransactionBody,
   GetTransactionsQueryParams,
   GetTransactionParams,
   UpdateTransactionParams,
@@ -12,24 +11,48 @@ import {
 
 const router: IRouter = Router();
 
+// Hand-crafted schemas that accept date strings (Orval generates zod.date() which
+// requires a JS Date object — but HTTP JSON bodies always send dates as strings).
+const createTransactionSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  description: z.string().min(1),
+  amount: z.number().positive(),
+  type: z.enum(["income", "expense", "transfer"]),
+  categoryId: z.number().nullable().optional(),
+  tags: z.array(z.string()).optional().default([]),
+  notes: z.string().nullable().optional(),
+});
+
+const updateTransactionSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  description: z.string().min(1).optional(),
+  amount: z.number().positive().optional(),
+  type: z.enum(["income", "expense", "transfer"]).optional(),
+  categoryId: z.number().nullable().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().nullable().optional(),
+});
+
+async function getCategoryInfo(categoryId: number | null | undefined) {
+  if (!categoryId) return { categoryName: null, categoryColor: null, categoryIcon: null };
+  const [cat] = await db.select().from(categoriesTable).where(eq(categoriesTable.id, categoryId));
+  return {
+    categoryName: cat?.name ?? null,
+    categoryColor: cat?.color ?? null,
+    categoryIcon: cat?.icon ?? null,
+  };
+}
+
+// READ - list
 router.get("/transactions", async (req, res) => {
   const query = GetTransactionsQueryParams.parse(req.query);
   const { month, categoryId, type, search, limit = 50, offset = 0 } = query;
 
   const conditions: ReturnType<typeof eq>[] = [];
-
-  if (month) {
-    conditions.push(sql`to_char(${transactionsTable.date}, 'YYYY-MM') = ${month}`);
-  }
-  if (categoryId !== undefined && categoryId !== null) {
-    conditions.push(eq(transactionsTable.categoryId, categoryId));
-  }
-  if (type) {
-    conditions.push(eq(transactionsTable.type, type as "income" | "expense" | "transfer"));
-  }
-  if (search) {
-    conditions.push(ilike(transactionsTable.description, `%${search}%`));
-  }
+  if (month) conditions.push(sql`to_char(${transactionsTable.date}, 'YYYY-MM') = ${month}`);
+  if (categoryId != null) conditions.push(eq(transactionsTable.categoryId, categoryId));
+  if (type) conditions.push(eq(transactionsTable.type, type as "income" | "expense" | "transfer"));
+  if (search) conditions.push(ilike(transactionsTable.description, `%${search}%`));
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -66,35 +89,31 @@ router.get("/transactions", async (req, res) => {
   ]);
 
   res.json({
-    transactions: rows.map((r) => ({
-      ...r,
-      amount: parseFloat(r.amount),
-    })),
+    transactions: rows.map((r) => ({ ...r, amount: parseFloat(r.amount) })),
     total: totals[0]?.total ?? 0,
     totalIncome: parseFloat(String(totals[0]?.totalIncome ?? 0)),
     totalExpenses: parseFloat(String(totals[0]?.totalExpenses ?? 0)),
   });
 });
 
+// CREATE
 router.post("/transactions", async (req, res) => {
-  const body = CreateTransactionBody.parse(req.body);
+  const result = createTransactionSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0]?.message ?? "Validation error" });
+  }
+  const body = result.data;
+
   const [created] = await db
     .insert(transactionsTable)
-    .values({
-      ...body,
-      tags: body.tags ?? [],
-    })
+    .values({ ...body, amount: String(body.amount), tags: body.tags ?? [] })
     .returning();
 
-  let categoryName = null, categoryColor = null, categoryIcon = null;
-  if (created.categoryId) {
-    const [cat] = await db.select().from(categoriesTable).where(eq(categoriesTable.id, created.categoryId));
-    if (cat) { categoryName = cat.name; categoryColor = cat.color; categoryIcon = cat.icon; }
-  }
-
-  res.status(201).json({ ...created, amount: parseFloat(created.amount), categoryName, categoryColor, categoryIcon });
+  const catInfo = await getCategoryInfo(created.categoryId);
+  res.status(201).json({ ...created, amount: parseFloat(created.amount), ...catInfo });
 });
 
+// READ - single
 router.get("/transactions/:id", async (req, res) => {
   const { id } = GetTransactionParams.parse(req.params);
   const [row] = await db
@@ -120,13 +139,20 @@ router.get("/transactions/:id", async (req, res) => {
   res.json({ ...row, amount: parseFloat(row.amount) });
 });
 
+// UPDATE
 router.patch("/transactions/:id", async (req, res) => {
   const { id } = UpdateTransactionParams.parse(req.params);
-  const body = UpdateTransactionBody.parse(req.body);
+
+  const result = updateTransactionSchema.safeParse(req.body);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error.errors[0]?.message ?? "Validation error" });
+  }
+  const body = result.data;
+
   const updateData: Record<string, unknown> = {};
   if (body.date !== undefined) updateData.date = body.date;
   if (body.description !== undefined) updateData.description = body.description;
-  if (body.amount !== undefined) updateData.amount = body.amount;
+  if (body.amount !== undefined) updateData.amount = String(body.amount);
   if (body.type !== undefined) updateData.type = body.type;
   if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
   if (body.tags !== undefined) updateData.tags = body.tags;
@@ -140,15 +166,11 @@ router.patch("/transactions/:id", async (req, res) => {
 
   if (!updated) return res.status(404).json({ error: "Transaction not found" });
 
-  let categoryName = null, categoryColor = null, categoryIcon = null;
-  if (updated.categoryId) {
-    const [cat] = await db.select().from(categoriesTable).where(eq(categoriesTable.id, updated.categoryId));
-    if (cat) { categoryName = cat.name; categoryColor = cat.color; categoryIcon = cat.icon; }
-  }
-
-  res.json({ ...updated, amount: parseFloat(updated.amount), categoryName, categoryColor, categoryIcon });
+  const catInfo = await getCategoryInfo(updated.categoryId);
+  res.json({ ...updated, amount: parseFloat(updated.amount), ...catInfo });
 });
 
+// DELETE
 router.delete("/transactions/:id", async (req, res) => {
   const { id } = DeleteTransactionParams.parse(req.params);
   const [deleted] = await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).returning();
