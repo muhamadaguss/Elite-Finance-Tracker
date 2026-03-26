@@ -82,10 +82,11 @@ export default function Analytics() {
               <BarChart data={trend} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val >= 1_000_000 ? `Rp${(val/1_000_000).toFixed(1)}jt` : val >= 1_000 ? `Rp${(val/1_000).toFixed(0)}rb` : `Rp${val}`} />
                 <Tooltip 
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }}
+                  formatter={(val: number) => [formatCurrency(val), ""]}
                 />
                 <Legend iconType="circle" />
                 <Bar dataKey="income" name="Income" fill="hsl(var(--success))" radius={[4,4,0,0]} barSize={30} />
@@ -104,9 +105,10 @@ export default function Analytics() {
               <LineChart data={trend} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => val >= 1_000_000 ? `Rp${(val/1_000_000).toFixed(1)}jt` : val >= 1_000 ? `Rp${(val/1_000).toFixed(0)}rb` : `Rp${val}`} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px' }}
+                  formatter={(val: number) => [formatCurrency(val), ""]}
                 />
                 <Line type="monotone" dataKey="savings" name="Net Savings" stroke="hsl(var(--primary))" strokeWidth={4} dot={{ r: 4, strokeWidth: 2, fill: 'hsl(var(--card))' }} activeDot={{ r: 8 }} />
               </LineChart>

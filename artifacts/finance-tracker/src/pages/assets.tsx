@@ -35,7 +35,7 @@ export default function Assets() {
     name: "",
     type: "cash",
     currentValue: 0,
-    currency: "USD",
+    currency: "IDR",
     color: "#3b82f6",
     icon: "💵"
   });
@@ -161,7 +161,7 @@ export default function Assets() {
                     </div>
                   </div>
                   <div className="mt-6 flex items-end justify-between">
-                    <div className="text-2xl font-bold text-foreground">{formatCurrency(asset.currentValue, asset.currency)}</div>
+                    <div className="text-2xl font-bold text-foreground">{formatCurrency(asset.currentValue)}</div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleOpenModal(asset)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg">
                         <Edit2 className="w-4 h-4" />
