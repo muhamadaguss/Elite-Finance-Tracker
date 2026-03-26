@@ -81,7 +81,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {kpis.map((kpi, i) => (
             <GlassCard key={i} delay={i * 0.1} className="relative overflow-hidden group">
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110`} />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
               <div className="flex flex-col gap-4 relative z-10">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${kpi.bg}`}>
                   <kpi.icon className={`w-7 h-7 ${kpi.color}`} />
@@ -124,8 +124,8 @@ export default function Dashboard() {
                     <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', color: '#fff' }}
-                      itemStyle={{ color: '#fff' }}
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', color: 'hsl(var(--foreground))' }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
                     />
                     <Area type="monotone" dataKey="income" stroke="hsl(var(--success))" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
                     <Area type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
@@ -194,18 +194,18 @@ export default function Dashboard() {
         <GlassCard delay={0.6}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold">Recent Transactions</h3>
-            <Badge variant="outline" className="cursor-pointer hover:bg-white/5 transition-colors">View All</Badge>
+            <Badge variant="outline" className="cursor-pointer hover:bg-muted/50 transition-colors">View All</Badge>
           </div>
           <div className="space-y-4">
             {isLoadingRecent ? (
               <div className="animate-pulse flex flex-col gap-4">
-                {[1,2,3].map(i => <div key={i} className="h-16 bg-white/5 rounded-xl"></div>)}
+                {[1,2,3].map(i => <div key={i} className="h-16 bg-muted/50 rounded-xl"></div>)}
               </div>
             ) : recent?.transactions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">No recent transactions.</div>
             ) : (
               recent?.transactions.map(tx => (
-                <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/10 group">
+                <div key={tx.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-muted/30 transition-colors border border-transparent hover:border-border/30 group">
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "w-12 h-12 rounded-xl flex items-center justify-center shadow-inner",

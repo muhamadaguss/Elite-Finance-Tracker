@@ -151,7 +151,7 @@ export default function Assets() {
                 <GlassCard key={asset.id} delay={i * 0.1} className="group relative">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner border border-white/10" style={{ backgroundColor: `${asset.color}20`, color: asset.color }}>
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner border border-border/50" style={{ backgroundColor: `${asset.color}20`, color: asset.color }}>
                         {asset.icon}
                       </div>
                       <div>
@@ -162,11 +162,11 @@ export default function Assets() {
                   </div>
                   <div className="mt-6 flex items-end justify-between">
                     <div className="text-2xl font-bold text-foreground">{formatCurrency(asset.currentValue)}</div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => handleOpenModal(asset)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg">
+                    <div className="flex gap-1">
+                      <button onClick={() => handleOpenModal(asset)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(asset.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg">
+                      <button onClick={() => handleDelete(asset.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -198,7 +198,7 @@ export default function Assets() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Type</label>
               <select 
-                className="flex h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-12 w-full rounded-xl border border-border bg-muted/50 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value as AssetType})}
               >

@@ -47,7 +47,7 @@ export default function Analytics() {
               <span className="text-5xl font-black text-foreground">{summary?.savingsRate || 0}%</span>
               <span className="text-muted-foreground mb-1">this month</span>
             </div>
-            <div className="w-full bg-black/40 h-3 rounded-full mt-6 overflow-hidden border border-white/5">
+            <div className="w-full bg-muted h-3 rounded-full mt-6 overflow-hidden border border-border/30">
               <div 
                 className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000"
                 style={{ width: `${Math.min(100, Math.max(0, summary?.savingsRate || 0))}%` }}
@@ -66,7 +66,7 @@ export default function Analytics() {
               <span className="text-5xl font-black text-foreground">{formatCurrency(summary?.netSavings || 0)}</span>
               <span className="text-muted-foreground mb-1">this month</span>
             </div>
-            <div className="flex justify-between mt-6 pt-4 border-t border-white/10">
+            <div className="flex justify-between mt-6 pt-4 border-t border-border/30">
               <div className="text-success text-sm">+ {formatCurrency(summary?.totalIncome || 0)} In</div>
               <div className="text-destructive text-sm">- {formatCurrency(summary?.totalExpenses || 0)} Out</div>
             </div>

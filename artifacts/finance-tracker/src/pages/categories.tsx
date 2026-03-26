@@ -102,10 +102,10 @@ export default function Categories() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories?.map((cat, i) => (
-              <GlassCard key={cat.id} delay={i * 0.05} className="group flex flex-col justify-between hover:border-white/20 transition-all">
+              <GlassCard key={cat.id} delay={i * 0.05} className="group flex flex-col justify-between hover:border-border transition-all">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner border border-white/10" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-inner border border-border/50" style={{ backgroundColor: `${cat.color}20`, color: cat.color }}>
                       {cat.icon}
                     </div>
                     <div>
@@ -113,17 +113,17 @@ export default function Categories() {
                       <p className="text-sm text-muted-foreground">{cat.transactionCount} transactions</p>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleOpenModal(cat)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 rounded-lg">
+                  <div className="flex gap-1">
+                    <button onClick={() => handleOpenModal(cat)} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(cat.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg">
+                    <button onClick={() => handleDelete(cat.id)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
                 {cat.parentName && (
-                  <div className="mt-4 pt-4 border-t border-white/5 text-xs text-muted-foreground">
+                  <div className="mt-4 pt-4 border-t border-border/30 text-xs text-muted-foreground">
                     Parent: <span className="font-medium text-foreground">{cat.parentName}</span>
                   </div>
                 )}
@@ -183,7 +183,7 @@ export default function Categories() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Parent Category (Optional)</label>
             <select 
-              className="flex h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex h-12 w-full rounded-xl border border-border bg-muted/50 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               value={formData.parentId || ""}
               onChange={(e) => setFormData({...formData, parentId: e.target.value ? parseInt(e.target.value) : null})}
             >

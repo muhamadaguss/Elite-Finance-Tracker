@@ -101,6 +101,7 @@ React + Vite frontend with dark glassmorphism UI. Configured as a **PWA** (Progr
 - **Currency**: IDR (Indonesian Rupiah) across all pages — `formatCurrency()` in `src/lib/utils.ts` defaults to `id-ID` locale
 - **Dev PWA**: Enabled via `devOptions: { enabled: true }` in `vite.config.ts`
 - **Receipt Scan**: AI-powered receipt analysis via OpenAI GPT-4o vision. Endpoint `POST /api/receipt/scan` accepts multipart image upload, returns structured data (date, amount, type, category, items). `POST /api/receipt/confirm` saves the extracted data as a transaction with tag `receipt-scan`. Uses `@workspace/integrations-openai-ai-server` (Replit AI Integrations, no API key needed).
+- **Theme Switcher**: Dark/Light mode via `ThemeProvider` context in `src/lib/theme.tsx`. CSS variables defined in `index.css` under `:root, .dark` and `.light` selectors. Theme toggle button in sidebar (desktop) and header (mobile). Preference persisted in `localStorage` under `lumina-theme` key. Glass utility classes adapt per theme.
 
 ### `scripts` (`@workspace/scripts`)
 

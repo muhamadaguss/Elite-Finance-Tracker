@@ -117,7 +117,7 @@ export default function Transactions() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-white/5 rounded-t-xl">
+              <thead className="text-xs text-muted-foreground uppercase bg-muted/50 rounded-t-xl">
                 <tr>
                   <th className="px-6 py-4 rounded-tl-xl font-medium">Date</th>
                   <th className="px-6 py-4 font-medium">Description</th>
@@ -133,7 +133,7 @@ export default function Transactions() {
                   <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">No transactions found.</td></tr>
                 ) : (
                   data?.transactions.map((tx) => (
-                    <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5 transition-colors group">
+                    <tr key={tx.id} className="border-b border-border/30 hover:bg-muted/30 transition-colors group">
                       <td className="px-6 py-4 whitespace-nowrap text-muted-foreground">
                         {formatDate(tx.date)}
                       </td>
@@ -162,7 +162,7 @@ export default function Transactions() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleOpenModal(tx)}>
                             <Edit2 className="w-4 h-4" />
                           </Button>
@@ -190,7 +190,7 @@ export default function Transactions() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Type</label>
               <select 
-                className="flex h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-12 w-full rounded-xl border border-border bg-muted/50 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 value={formData.type}
                 onChange={(e) => setFormData({...formData, type: e.target.value as TransactionType})}
               >
@@ -235,7 +235,7 @@ export default function Transactions() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Category</label>
               <select 
-                className="flex h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-12 w-full rounded-xl border border-border bg-muted/50 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 value={formData.categoryId || ""}
                 onChange={(e) => setFormData({...formData, categoryId: e.target.value ? parseInt(e.target.value) : null})}
               >

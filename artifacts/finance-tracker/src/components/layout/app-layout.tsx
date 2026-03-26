@@ -11,9 +11,12 @@ import {
   ScanLine,
   LogOut,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/theme";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -28,6 +31,7 @@ const navItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <div className="min-h-screen flex bg-background text-foreground overflow-hidden">
@@ -50,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div
                   className={cn(
                     "flex items-center gap-4 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 relative group overflow-hidden",
-                    isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
                   {isActive && (
@@ -69,7 +73,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-4">
+        <div className="p-4 space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+          </button>
           <button className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
@@ -85,9 +96,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           <span className="text-lg font-bold text-gradient">Lumina</span>
         </Link>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-foreground p-2">
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={toggleTheme} className="text-muted-foreground hover:text-foreground p-2 transition-colors">
+            {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-foreground p-2">
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
