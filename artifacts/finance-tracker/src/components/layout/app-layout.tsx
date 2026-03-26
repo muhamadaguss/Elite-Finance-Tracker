@@ -54,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <div
                   className={cn(
                     "flex items-center gap-4 px-4 py-3.5 rounded-xl font-medium transition-all duration-300 relative group overflow-hidden",
-                    isActive ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
                   {isActive && (
