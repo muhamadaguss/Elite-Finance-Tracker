@@ -1,0 +1,21 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="96" fill="#0a0e1a"/>
+  <rect x="8" y="8" width="496" height="496" rx="88" fill="url(#bg)" stroke="url(#border)" stroke-width="2"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#0f1629"/>
+      <stop offset="100%" stop-color="#0a0e1a"/>
+    </linearGradient>
+    <linearGradient id="border" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="128" y1="128" x2="384" y2="384">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <path d="M256 120 L340 200 L340 320 Q340 360 300 380 L256 400 L212 380 Q172 360 172 320 L172 200 Z" fill="url(#accent)" opacity="0.15"/>
+  <path d="M256 140 L330 210 L330 310 Q330 345 295 362 L256 380 L217 362 Q182 345 182 310 L182 210 Z" stroke="url(#accent)" stroke-width="6" fill="none"/>
+  <text x="256" y="300" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="140" fill="url(#accent)">L</text>
+</svg>
