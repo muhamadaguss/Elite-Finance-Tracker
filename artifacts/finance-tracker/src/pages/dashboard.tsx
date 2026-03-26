@@ -82,15 +82,15 @@ export default function Dashboard() {
           {kpis.map((kpi, i) => (
             <GlassCard key={i} delay={i * 0.1} className="relative overflow-hidden group">
               <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110`} />
-              <div className="flex items-center justify-between relative z-10">
+              <div className="flex flex-col gap-4 relative z-10">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${kpi.bg}`}>
+                  <kpi.icon className={`w-7 h-7 ${kpi.color}`} />
+                </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
-                  <h3 className="text-2xl font-bold mt-2 text-foreground">
+                  <h3 className="text-2xl font-bold mt-1 text-foreground">
                     {kpi.isPercent ? kpi.value : formatCurrency(kpi.value as number)}
                   </h3>
-                </div>
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${kpi.bg}`}>
-                  <kpi.icon className={`w-7 h-7 ${kpi.color}`} />
                 </div>
               </div>
             </GlassCard>
@@ -158,9 +158,18 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={entry.categoryColor || `hsl(var(--primary))`} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                      formatter={(val: number) => formatCurrency(val)}
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        borderColor: 'hsl(var(--border))',
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))',
+                        fontSize: '13px',
+                        padding: '8px 12px',
+                      }}
+                      itemStyle={{ color: 'hsl(var(--foreground))' }}
+                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                      formatter={(val: number, name: string) => [formatCurrency(val), name]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
