@@ -127,7 +127,7 @@ export default function Dashboard() {
                       contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '12px', color: 'hsl(var(--foreground))' }}
                       itemStyle={{ color: 'hsl(var(--foreground))' }}
                       labelStyle={{ color: 'hsl(var(--muted-foreground))', fontWeight: 600, marginBottom: 4 }}
-                      formatter={(val: number, name: string) => [formatCurrency(val), name === 'income' ? 'Income' : 'Expenses']}
+                      formatter={(val: number, name: string) => [formatCurrency(val), name]}
                     />
                     <Area type="monotone" dataKey="income" name="Income" stroke="hsl(var(--success))" strokeWidth={3} fillOpacity={1} fill="url(#colorIncome)" />
                     <Area type="monotone" dataKey="expenses" name="Expenses" stroke="hsl(var(--destructive))" strokeWidth={3} fillOpacity={1} fill="url(#colorExpense)" />
