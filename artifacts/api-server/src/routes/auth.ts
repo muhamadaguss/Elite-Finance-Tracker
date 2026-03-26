@@ -1,31 +1,25 @@
-import * as oidc from "openid-client";
+import crypto from "crypto";
 import { Router, type IRouter, type Request, type Response } from "express";
-import {
-  GetCurrentAuthUserResponse,
-  ExchangeMobileAuthorizationCodeBody,
-  ExchangeMobileAuthorizationCodeResponse,
-  LogoutMobileSessionResponse,
-} from "@workspace/api-zod";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, categoriesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   clearSession,
-  getOidcConfig,
   getSessionId,
   createSession,
   deleteSession,
   SESSION_COOKIE,
   SESSION_TTL,
-  ISSUER_URL,
   type SessionData,
 } from "../lib/auth";
 
-const OIDC_COOKIE_TTL = 10 * 60 * 1000;
-
 const router: IRouter = Router();
 
-function getOrigin(_req: Request): string {
-  const domain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG + "." + process.env.REPL_OWNER + ".repl.co";
-  return `https://${domain}`;
+function hashPassword(password: string, salt: string): string {
+  return crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
+}
+
+function generateSalt(): string {
+  return crypto.randomBytes(16).toString("hex");
 }
 
 function setSessionCookie(res: Response, sid: string) {
@@ -38,233 +32,182 @@ function setSessionCookie(res: Response, sid: string) {
   });
 }
 
-function setOidcCookie(res: Response, name: string, value: string) {
-  res.cookie(name, value, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: OIDC_COOKIE_TTL,
-  });
-}
+const DEFAULT_CATEGORIES = [
+  { name: "Makanan & Minuman", icon: "🍔", color: "#f97316" },
+  { name: "Transportasi", icon: "🚗", color: "#3b82f6" },
+  { name: "Belanja", icon: "🛍️", color: "#ec4899" },
+  { name: "Tagihan", icon: "📄", color: "#ef4444" },
+  { name: "Hiburan", icon: "🎬", color: "#8b5cf6" },
+  { name: "Kesehatan", icon: "🏥", color: "#10b981" },
+  { name: "Pendidikan", icon: "📚", color: "#6366f1" },
+  { name: "Gaji", icon: "💰", color: "#22c55e" },
+  { name: "Investasi", icon: "📈", color: "#14b8a6" },
+  { name: "Lainnya", icon: "📦", color: "#64748b" },
+];
 
-function getSafeReturnTo(value: unknown): string {
-  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
-    return "/";
-  }
-  return value;
-}
+async function seedDefaultCategories(userId: string) {
+  const existing = await db
+    .select({ id: categoriesTable.id })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.userId, userId))
+    .limit(1);
 
-async function upsertUser(claims: Record<string, unknown>) {
-  const userData = {
-    id: claims.sub as string,
-    email: (claims.email as string) || null,
-    firstName: (claims.first_name as string) || null,
-    lastName: (claims.last_name as string) || null,
-    profileImageUrl: (claims.profile_image_url || claims.picture) as
-      | string
-      | null,
-  };
+  if (existing.length > 0) return;
 
-  const [user] = await db
-    .insert(usersTable)
-    .values(userData)
-    .onConflictDoUpdate({
-      target: usersTable.id,
-      set: {
-        ...userData,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
-  return user;
+  await db.insert(categoriesTable).values(
+    DEFAULT_CATEGORIES.map((cat) => ({ ...cat, userId })),
+  );
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
-  res.json(
-    GetCurrentAuthUserResponse.parse({
-      user: req.isAuthenticated() ? req.user : null,
-    }),
-  );
-});
-
-router.get("/login", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
-
-  const returnTo = getSafeReturnTo(req.query.returnTo);
-
-  const state = oidc.randomState();
-  const nonce = oidc.randomNonce();
-  const codeVerifier = oidc.randomPKCECodeVerifier();
-  const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
-
-  const redirectTo = oidc.buildAuthorizationUrl(config, {
-    redirect_uri: callbackUrl,
-    scope: "openid email profile offline_access",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-    prompt: "login consent",
-    state,
-    nonce,
-  });
-
-  setOidcCookie(res, "code_verifier", codeVerifier);
-  setOidcCookie(res, "nonce", nonce);
-  setOidcCookie(res, "state", state);
-  setOidcCookie(res, "return_to", returnTo);
-
-  res.redirect(redirectTo.href);
-});
-
-// Query params are not validated because the OIDC provider may include
-// parameters not expressed in the schema.
-router.get("/callback", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
-
-  const codeVerifier = req.cookies?.code_verifier;
-  const nonce = req.cookies?.nonce;
-  const expectedState = req.cookies?.state;
-
-  if (!codeVerifier || !expectedState) {
-    res.redirect("/api/login");
-    return;
-  }
-
-  const currentUrl = new URL(
-    `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
-  );
-
-  let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
-  try {
-    tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
-      pkceCodeVerifier: codeVerifier,
-      expectedNonce: nonce,
-      expectedState,
-      idTokenExpected: true,
+  if (req.isAuthenticated()) {
+    res.json({
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        firstName: req.user.firstName,
+        lastName: req.user.lastName,
+      },
     });
-  } catch {
-    res.redirect("/api/login");
+  } else {
+    res.json({ user: null });
+  }
+});
+
+router.post("/auth/register", async (req: Request, res: Response) => {
+  const { username, password, firstName, lastName } = req.body;
+
+  if (!username || !password) {
+    res.status(400).json({ error: "Username dan password wajib diisi" });
     return;
   }
 
-  const returnTo = getSafeReturnTo(req.cookies?.return_to);
-
-  res.clearCookie("code_verifier", { path: "/" });
-  res.clearCookie("nonce", { path: "/" });
-  res.clearCookie("state", { path: "/" });
-  res.clearCookie("return_to", { path: "/" });
-
-  const claims = tokens.claims();
-  if (!claims) {
-    res.redirect("/api/login");
+  if (typeof username !== "string" || username.length < 3) {
+    res.status(400).json({ error: "Username minimal 3 karakter" });
     return;
   }
 
-  const dbUser = await upsertUser(
-    claims as unknown as Record<string, unknown>,
-  );
+  if (typeof password !== "string" || password.length < 6) {
+    res.status(400).json({ error: "Password minimal 6 karakter" });
+    return;
+  }
 
-  const now = Math.floor(Date.now() / 1000);
+  if (firstName !== undefined && typeof firstName !== "string") {
+    res.status(400).json({ error: "Format nama tidak valid" });
+    return;
+  }
+
+  if (lastName !== undefined && typeof lastName !== "string") {
+    res.status(400).json({ error: "Format nama tidak valid" });
+    return;
+  }
+
+  const salt = generateSalt();
+  const passwordHash = `${salt}:${hashPassword(password, salt)}`;
+
+  let user;
+  try {
+    const [inserted] = await db
+      .insert(usersTable)
+      .values({
+        username: username.toLowerCase().trim(),
+        passwordHash,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+      })
+      .returning();
+    user = inserted;
+  } catch (err: any) {
+    if (err?.code === "23505") {
+      res.status(409).json({ error: "Username sudah digunakan" });
+      return;
+    }
+    throw err;
+  }
+
+  await seedDefaultCategories(user.id);
+
   const sessionData: SessionData = {
     user: {
-      id: dbUser.id,
-      email: dbUser.email,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      profileImageUrl: dbUser.profileImageUrl,
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
     },
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
   };
 
   const sid = await createSession(sessionData);
   setSessionCookie(res, sid);
-  res.redirect(returnTo);
-});
 
-router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const origin = getOrigin(req);
-
-  const sid = getSessionId(req);
-  await clearSession(res, sid);
-
-  const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: origin,
+  res.status(201).json({
+    user: {
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
   });
-
-  res.redirect(endSessionUrl.href);
 });
 
-router.post(
-  "/mobile-auth/token-exchange",
-  async (req: Request, res: Response) => {
-    const parsed = ExchangeMobileAuthorizationCodeBody.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: "Missing or invalid required parameters" });
-      return;
-    }
+router.post("/auth/login", async (req: Request, res: Response) => {
+  const { username, password } = req.body;
 
-    const { code, code_verifier, redirect_uri, state, nonce } = parsed.data;
+  if (!username || !password || typeof username !== "string" || typeof password !== "string") {
+    res.status(400).json({ error: "Username dan password wajib diisi" });
+    return;
+  }
 
-    try {
-      const config = await getOidcConfig();
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.username, username.toLowerCase().trim()));
 
-      const callbackUrl = new URL(redirect_uri);
-      callbackUrl.searchParams.set("code", code);
-      callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("iss", ISSUER_URL);
+  if (!user) {
+    res.status(401).json({ error: "Username atau password salah" });
+    return;
+  }
 
-      const tokens = await oidc.authorizationCodeGrant(config, callbackUrl, {
-        pkceCodeVerifier: code_verifier,
-        expectedNonce: nonce ?? undefined,
-        expectedState: state,
-        idTokenExpected: true,
-      });
+  const [salt, storedHash] = user.passwordHash.split(":");
+  const inputHash = hashPassword(password, salt);
 
-      const claims = tokens.claims();
-      if (!claims) {
-        res.status(401).json({ error: "No claims in ID token" });
-        return;
-      }
+  const storedBuf = Buffer.from(storedHash, "hex");
+  const inputBuf = Buffer.from(inputHash, "hex");
+  if (storedBuf.length !== inputBuf.length || !crypto.timingSafeEqual(storedBuf, inputBuf)) {
+    res.status(401).json({ error: "Username atau password salah" });
+    return;
+  }
 
-      const dbUser = await upsertUser(
-        claims as unknown as Record<string, unknown>,
-      );
+  await seedDefaultCategories(user.id);
 
-      const now = Math.floor(Date.now() / 1000);
-      const sessionData: SessionData = {
-        user: {
-          id: dbUser.id,
-          email: dbUser.email,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          profileImageUrl: dbUser.profileImageUrl,
-        },
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
-      };
+  const sessionData: SessionData = {
+    user: {
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
+  };
 
-      const sid = await createSession(sessionData);
-      res.json(ExchangeMobileAuthorizationCodeResponse.parse({ token: sid }));
-    } catch (err) {
-      req.log.error({ err }, "Mobile token exchange error");
-      res.status(500).json({ error: "Token exchange failed" });
-    }
-  },
-);
+  const sid = await createSession(sessionData);
+  setSessionCookie(res, sid);
 
-router.post("/mobile-auth/logout", async (req: Request, res: Response) => {
+  res.json({
+    user: {
+      id: user.id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    },
+  });
+});
+
+router.post("/auth/logout", async (req: Request, res: Response) => {
   const sid = getSessionId(req);
   if (sid) {
     await deleteSession(sid);
   }
-  res.json(LogoutMobileSessionResponse.parse({ success: true }));
+  res.clearCookie(SESSION_COOKIE, { path: "/" });
+  res.json({ success: true });
 });
 
 export default router;

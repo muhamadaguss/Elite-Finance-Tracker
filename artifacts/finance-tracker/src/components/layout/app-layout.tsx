@@ -78,15 +78,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 space-y-2">
           {user && (
             <div className="flex items-center gap-3 px-4 py-3 mb-2">
-              {user.profileImageUrl ? (
-                <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full ring-2 ring-primary/30" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                  {(user.firstName?.[0] || user.email?.[0] || "?").toUpperCase()}
-                </div>
-              )}
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                {(user.firstName?.[0] || user.username?.[0] || "?").toUpperCase()}
+              </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.firstName || user.email || "User"}</p>
+                <p className="text-sm font-medium truncate">{user.firstName || user.username}</p>
+                {user.firstName && <p className="text-xs text-muted-foreground truncate">@{user.username}</p>}
               </div>
             </div>
           )}

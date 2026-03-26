@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
-import type { AuthUser } from "@workspace/api-client-react";
 
-export type { AuthUser };
+export interface AuthUser {
+  id: string;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
+}
 
 interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => void;
-  logout: () => void;
+  login: (username: string, password: string) => Promise<{ error?: string }>;
+  register: (data: { username: string; password: string; firstName?: string; lastName?: string }) => Promise<{ error?: string }>;
+  logout: () => Promise<void>;
 }
 
 export function useAuth(): AuthState {
@@ -41,13 +46,56 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  const login = useCallback(() => {
-    const base = import.meta.env.BASE_URL.replace(/\/+$/, "") || "/";
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+  const login = useCallback(async (username: string, password: string): Promise<{ error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { error: data.error || "Login gagal" };
+      }
+
+      setUser(data.user);
+      return {};
+    } catch {
+      return { error: "Koneksi gagal, coba lagi" };
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    window.location.href = "/api/logout";
+  const register = useCallback(async (data: { username: string; password: string; firstName?: string; lastName?: string }): Promise<{ error?: string }> => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        return { error: result.error || "Registrasi gagal" };
+      }
+
+      setUser(result.user);
+      return {};
+    } catch {
+      return { error: "Koneksi gagal, coba lagi" };
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    setUser(null);
   }, []);
 
   return {
@@ -55,6 +103,7 @@ export function useAuth(): AuthState {
     isLoading,
     isAuthenticated: !!user,
     login,
+    register,
     logout,
   };
 }

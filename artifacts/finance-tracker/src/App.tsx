@@ -40,7 +40,7 @@ function Router() {
 }
 
 function AuthGate() {
-  const { isLoading, isAuthenticated, login } = useAuth();
+  const { isLoading, isAuthenticated, login, register } = useAuth();
 
   if (isLoading) {
     return (
@@ -56,7 +56,7 @@ function AuthGate() {
   }
 
   if (!isAuthenticated) {
-    return <LoginPage onLogin={login} />;
+    return <LoginPage onLogin={login} onRegister={register} />;
   }
 
   return (

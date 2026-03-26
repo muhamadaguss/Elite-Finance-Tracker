@@ -56,10 +56,11 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS (credentials: true), cookie-parser, authMiddleware, JSON/urlencoded parsing, routes at `/api`
-- Auth: Replit Auth (OIDC with PKCE). `src/middlewares/authMiddleware.ts` decorates `req.user` from session cookie. `src/middlewares/requireAuth.ts` returns 401 for unauthenticated requests. Routes: health + auth endpoints are public; all business routes (transactions, categories, analytics, assets, import, receipt) require auth.
+- Auth: Username/password authentication with PBKDF2 hashing (100k iterations, SHA-512). `src/middlewares/authMiddleware.ts` decorates `req.user` from session cookie. `src/middlewares/requireAuth.ts` returns 401 for unauthenticated requests. Routes: health + auth endpoints are public; all business routes (transactions, categories, analytics, assets, import, receipt) require auth.
+- Auth routes: `POST /api/auth/register` (username+password, seeds default categories), `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/user`
 - Data isolation: All data tables (`transactions`, `categories`, `assets`) have a `userId` column. Every query is scoped by the authenticated user's ID.
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`); `src/routes/auth.ts` handles login/callback/logout/mobile-auth flows
-- Depends on: `@workspace/db`, `@workspace/api-zod`, `openid-client`, `cookie-parser`
+- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`); `src/routes/auth.ts` handles register/login/logout
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `cookie-parser`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
 - Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
@@ -95,7 +96,7 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 ### `lib/replit-auth-web` (`@workspace/replit-auth-web`)
 
-Client-side auth hook for React. Exports `useAuth()` returning `{ user, isLoading, isAuthenticated, login, logout }`. Fetches session from `/api/auth/user`, redirects to `/api/login` for login and `/api/logout` for logout.
+Client-side auth hook for React. Exports `useAuth()` returning `{ user, isLoading, isAuthenticated, login, register, logout }`. `login(username, password)` calls `POST /api/auth/login`, `register(data)` calls `POST /api/auth/register`, `logout()` calls `POST /api/auth/logout`. All return `{ error?: string }` on failure.
 
 ### `artifacts/finance-tracker` (`@workspace/finance-tracker`)
 
