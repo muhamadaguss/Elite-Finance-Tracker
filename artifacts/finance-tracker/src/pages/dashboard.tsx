@@ -89,8 +89,8 @@ export default function Dashboard() {
                     {kpi.isPercent ? kpi.value : formatCurrency(kpi.value as number)}
                   </h3>
                 </div>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${kpi.bg}`}>
-                  <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 ${kpi.bg}`}>
+                  <kpi.icon className={`w-7 h-7 ${kpi.color}`} />
                 </div>
               </div>
             </GlassCard>
