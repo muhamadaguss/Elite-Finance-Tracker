@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, categoriesTable, transactionsTable } from "@workspace/db";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 import {
   CreateCategoryBody,
   UpdateCategoryBody,
@@ -10,7 +10,8 @@ import {
 
 const router: IRouter = Router();
 
-router.get("/categories", async (_req, res) => {
+router.get("/categories", async (req, res) => {
+  const userId = req.user!.id;
   const cats = await db
     .select({
       id: categoriesTable.id,
@@ -21,7 +22,8 @@ router.get("/categories", async (_req, res) => {
       transactionCount: sql<number>`CAST(COUNT(${transactionsTable.id}) AS INTEGER)`,
     })
     .from(categoriesTable)
-    .leftJoin(transactionsTable, eq(transactionsTable.categoryId, categoriesTable.id))
+    .leftJoin(transactionsTable, and(eq(transactionsTable.categoryId, categoriesTable.id), eq(transactionsTable.userId, userId)))
+    .where(eq(categoriesTable.userId, userId))
     .groupBy(categoriesTable.id);
 
   const catMap = new Map(cats.map((c) => [c.id, c.name]));
@@ -36,12 +38,14 @@ router.get("/categories", async (_req, res) => {
 
 router.post("/categories", async (req, res) => {
   const body = CreateCategoryBody.parse(req.body);
-  const [created] = await db.insert(categoriesTable).values(body).returning();
+  const userId = req.user!.id;
+  const [created] = await db.insert(categoriesTable).values({ ...body, userId }).returning();
   res.status(201).json({ ...created, transactionCount: 0, parentName: null });
 });
 
 router.patch("/categories/:id", async (req, res) => {
   const { id } = UpdateCategoryParams.parse(req.params);
+  const userId = req.user!.id;
   const body = UpdateCategoryBody.parse(req.body);
   const updateData: Record<string, unknown> = {};
   if (body.name !== undefined) updateData.name = body.name;
@@ -52,7 +56,7 @@ router.patch("/categories/:id", async (req, res) => {
   const [updated] = await db
     .update(categoriesTable)
     .set(updateData)
-    .where(eq(categoriesTable.id, id))
+    .where(and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)))
     .returning();
 
   if (!updated) return res.status(404).json({ error: "Category not found" });
@@ -61,7 +65,8 @@ router.patch("/categories/:id", async (req, res) => {
 
 router.delete("/categories/:id", async (req, res) => {
   const { id } = DeleteCategoryParams.parse(req.params);
-  await db.delete(categoriesTable).where(eq(categoriesTable.id, id));
+  const userId = req.user!.id;
+  await db.delete(categoriesTable).where(and(eq(categoriesTable.id, id), eq(categoriesTable.userId, userId)));
   res.status(204).send();
 });
 

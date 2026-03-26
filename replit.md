@@ -55,9 +55,11 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
+- App setup: `src/app.ts` — mounts CORS (credentials: true), cookie-parser, authMiddleware, JSON/urlencoded parsing, routes at `/api`
+- Auth: Replit Auth (OIDC with PKCE). `src/middlewares/authMiddleware.ts` decorates `req.user` from session cookie. `src/middlewares/requireAuth.ts` returns 401 for unauthenticated requests. Routes: health + auth endpoints are public; all business routes (transactions, categories, analytics, assets, import, receipt) require auth.
+- Data isolation: All data tables (`transactions`, `categories`, `assets`) have a `userId` column. Every query is scoped by the authenticated user's ID.
+- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`); `src/routes/auth.ts` handles login/callback/logout/mobile-auth flows
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `openid-client`, `cookie-parser`
 - `pnpm --filter @workspace/api-server run dev` — run the dev server
 - `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
 - Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
@@ -90,6 +92,10 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 ### `lib/api-client-react` (`@workspace/api-client-react`)
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+
+### `lib/replit-auth-web` (`@workspace/replit-auth-web`)
+
+Client-side auth hook for React. Exports `useAuth()` returning `{ user, isLoading, isAuthenticated, login, logout }`. Fetches session from `/api/auth/user`, redirects to `/api/login` for login and `/api/logout` for logout.
 
 ### `artifacts/finance-tracker` (`@workspace/finance-tracker`)
 

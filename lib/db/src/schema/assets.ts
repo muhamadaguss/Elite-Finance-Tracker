@@ -1,9 +1,10 @@
-import { pgTable, text, serial, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const assetsTable = pgTable("assets", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
   name: text("name").notNull(),
   type: text("type", { enum: ["cash", "investment", "property", "crypto", "other"] }).notNull(),
   currentValue: numeric("current_value", { precision: 15, scale: 2 }).notNull(),

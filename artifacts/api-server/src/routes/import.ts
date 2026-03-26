@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, transactionsTable, categoriesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { ParseImportBody, ConfirmImportBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -146,11 +147,12 @@ function parsePlainText(content: string) {
 router.post("/import/parse", async (req, res) => {
   const body = ParseImportBody.parse(req.body);
   const { content, format } = body;
+  const userId = req.user!.id;
 
   const isCSV = format === "csv" || (format === "auto" && (content.includes(",") || content.includes(";") || content.includes("\t")));
   const result = isCSV ? parseCSV(content) : parsePlainText(content);
 
-  const categories = await db.select().from(categoriesTable);
+  const categories = await db.select().from(categoriesTable).where(eq(categoriesTable.userId, userId));
 
   const enriched = result.transactions.map((t) => {
     let suggestedCategoryId = null;
@@ -177,6 +179,7 @@ router.post("/import/parse", async (req, res) => {
 
 router.post("/import/confirm", async (req, res) => {
   const body = ConfirmImportBody.parse(req.body);
+  const userId = req.user!.id;
   let imported = 0;
   let failed = 0;
 
@@ -184,6 +187,7 @@ router.post("/import/confirm", async (req, res) => {
     try {
       await db.insert(transactionsTable).values({
         ...t,
+        userId,
         amount: String(t.amount),
         tags: t.tags ?? [],
       });

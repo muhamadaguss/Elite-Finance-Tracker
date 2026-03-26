@@ -14,8 +14,9 @@ router.post("/receipt/scan", upload.single("receipt"), async (req, res) => {
 
   const base64Image = req.file.buffer.toString("base64");
   const mimeType = req.file.mimetype || "image/jpeg";
+  const userId = req.user!.id;
 
-  const categories = await db.select().from(categoriesTable);
+  const categories = await db.select().from(categoriesTable).where(eq(categoriesTable.userId, userId));
   const categoryList = categories.map((c) => `${c.id}: ${c.name}`).join(", ");
 
   const response = await openai.chat.completions.create({
@@ -77,6 +78,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`,
 
 router.post("/receipt/confirm", async (req, res) => {
   const { date, description, amount, type, categoryId, notes } = req.body;
+  const userId = req.user!.id;
 
   if (!date || !description || !amount || !type) {
     return res.status(400).json({ error: "Missing required fields: date, description, amount, type" });
@@ -85,6 +87,7 @@ router.post("/receipt/confirm", async (req, res) => {
   const [created] = await db
     .insert(transactionsTable)
     .values({
+      userId,
       date,
       description,
       amount: String(amount),

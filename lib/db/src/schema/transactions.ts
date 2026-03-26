@@ -1,9 +1,10 @@
-import { pgTable, text, serial, integer, numeric, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, numeric, date, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 export const transactionsTable = pgTable("transactions", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
   date: date("date").notNull(),
   description: text("description").notNull(),
   amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),

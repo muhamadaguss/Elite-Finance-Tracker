@@ -1,12 +1,13 @@
 import { Router, type IRouter } from "express";
 import { db, assetsTable, assetHistoryTable } from "@workspace/db";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { CreateAssetBody, UpdateAssetBody, UpdateAssetParams, DeleteAssetParams } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-router.get("/assets", async (_req, res) => {
-  const assets = await db.select().from(assetsTable).orderBy(desc(assetsTable.updatedAt));
+router.get("/assets", async (req, res) => {
+  const userId = req.user!.id;
+  const assets = await db.select().from(assetsTable).where(eq(assetsTable.userId, userId)).orderBy(desc(assetsTable.updatedAt));
   res.json(
     assets.map((a) => ({
       ...a,
@@ -17,9 +18,10 @@ router.get("/assets", async (_req, res) => {
 
 router.post("/assets", async (req, res) => {
   const body = CreateAssetBody.parse(req.body);
+  const userId = req.user!.id;
   const [created] = await db
     .insert(assetsTable)
-    .values({ ...body, currentValue: String(body.currentValue) })
+    .values({ ...body, userId, currentValue: String(body.currentValue) })
     .returning();
 
   await db.insert(assetHistoryTable).values({
@@ -32,6 +34,7 @@ router.post("/assets", async (req, res) => {
 
 router.patch("/assets/:id", async (req, res) => {
   const { id } = UpdateAssetParams.parse(req.params);
+  const userId = req.user!.id;
   const body = UpdateAssetBody.parse(req.body);
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
   if (body.name !== undefined) updateData.name = body.name;
@@ -42,7 +45,7 @@ router.patch("/assets/:id", async (req, res) => {
   const [updated] = await db
     .update(assetsTable)
     .set(updateData)
-    .where(eq(assetsTable.id, id))
+    .where(and(eq(assetsTable.id, id), eq(assetsTable.userId, userId)))
     .returning();
 
   if (!updated) return res.status(404).json({ error: "Asset not found" });
@@ -59,11 +62,13 @@ router.patch("/assets/:id", async (req, res) => {
 
 router.delete("/assets/:id", async (req, res) => {
   const { id } = DeleteAssetParams.parse(req.params);
-  await db.delete(assetsTable).where(eq(assetsTable.id, id));
+  const userId = req.user!.id;
+  await db.delete(assetsTable).where(and(eq(assetsTable.id, id), eq(assetsTable.userId, userId)));
   res.status(204).send();
 });
 
-router.get("/assets/net-worth-history", async (_req, res) => {
+router.get("/assets/net-worth-history", async (req, res) => {
+  const userId = req.user!.id;
   const rows = await db
     .select({
       date: sql<string>`to_char(${assetHistoryTable.recordedAt}, 'YYYY-MM-DD')`,
@@ -72,7 +77,7 @@ router.get("/assets/net-worth-history", async (_req, res) => {
       assetName: assetsTable.name,
     })
     .from(assetHistoryTable)
-    .leftJoin(assetsTable, eq(assetHistoryTable.assetId, assetsTable.id))
+    .innerJoin(assetsTable, and(eq(assetHistoryTable.assetId, assetsTable.id), eq(assetsTable.userId, userId)))
     .orderBy(sql`to_char(${assetHistoryTable.recordedAt}, 'YYYY-MM-DD') ASC`);
 
   const byDate = new Map<string, { netWorth: number; breakdown: Record<string, number> }>();
@@ -87,7 +92,7 @@ router.get("/assets/net-worth-history", async (_req, res) => {
   }
 
   if (byDate.size === 0) {
-    const assets = await db.select().from(assetsTable);
+    const assets = await db.select().from(assetsTable).where(eq(assetsTable.userId, userId));
     if (assets.length > 0) {
       const today = new Date().toISOString().split("T")[0];
       const netWorth = assets.reduce((sum, a) => sum + parseFloat(a.currentValue), 0);

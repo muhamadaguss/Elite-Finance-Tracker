@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/lib/theme";
+import { useAuth } from "@workspace/replit-auth-web";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -32,6 +33,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen flex bg-background text-foreground overflow-hidden">
@@ -74,6 +76,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 space-y-2">
+          {user && (
+            <div className="flex items-center gap-3 px-4 py-3 mb-2">
+              {user.profileImageUrl ? (
+                <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full ring-2 ring-primary/30" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                  {(user.firstName?.[0] || user.email?.[0] || "?").toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{user.firstName || user.email || "User"}</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={toggleTheme}
             className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
@@ -81,7 +97,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
           </button>
-          <button className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+          <button onClick={logout} className="flex items-center gap-4 px-4 py-3.5 w-full rounded-xl font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
           </button>

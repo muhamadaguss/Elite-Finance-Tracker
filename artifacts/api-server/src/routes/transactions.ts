@@ -47,8 +47,9 @@ async function getCategoryInfo(categoryId: number | null | undefined) {
 router.get("/transactions", async (req, res) => {
   const query = GetTransactionsQueryParams.parse(req.query);
   const { month, categoryId, type, search, limit = 50, offset = 0 } = query;
+  const userId = req.user!.id;
 
-  const conditions: ReturnType<typeof eq>[] = [];
+  const conditions: ReturnType<typeof eq>[] = [eq(transactionsTable.userId, userId)];
   if (month) conditions.push(sql`to_char(${transactionsTable.date}, 'YYYY-MM') = ${month}`);
   if (categoryId != null) conditions.push(eq(transactionsTable.categoryId, categoryId));
   if (type) conditions.push(eq(transactionsTable.type, type as "income" | "expense" | "transfer"));
@@ -103,10 +104,11 @@ router.post("/transactions", async (req, res) => {
     return res.status(400).json({ error: result.error.errors[0]?.message ?? "Validation error" });
   }
   const body = result.data;
+  const userId = req.user!.id;
 
   const [created] = await db
     .insert(transactionsTable)
-    .values({ ...body, amount: String(body.amount), tags: body.tags ?? [] })
+    .values({ ...body, userId, amount: String(body.amount), tags: body.tags ?? [] })
     .returning();
 
   const catInfo = await getCategoryInfo(created.categoryId);
@@ -116,6 +118,7 @@ router.post("/transactions", async (req, res) => {
 // READ - single
 router.get("/transactions/:id", async (req, res) => {
   const { id } = GetTransactionParams.parse(req.params);
+  const userId = req.user!.id;
   const [row] = await db
     .select({
       id: transactionsTable.id,
@@ -133,7 +136,7 @@ router.get("/transactions/:id", async (req, res) => {
     })
     .from(transactionsTable)
     .leftJoin(categoriesTable, eq(transactionsTable.categoryId, categoriesTable.id))
-    .where(eq(transactionsTable.id, id));
+    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)));
 
   if (!row) return res.status(404).json({ error: "Transaction not found" });
   res.json({ ...row, amount: parseFloat(row.amount) });
@@ -142,6 +145,7 @@ router.get("/transactions/:id", async (req, res) => {
 // UPDATE
 router.patch("/transactions/:id", async (req, res) => {
   const { id } = UpdateTransactionParams.parse(req.params);
+  const userId = req.user!.id;
 
   const result = updateTransactionSchema.safeParse(req.body);
   if (!result.success) {
@@ -161,7 +165,7 @@ router.patch("/transactions/:id", async (req, res) => {
   const [updated] = await db
     .update(transactionsTable)
     .set(updateData)
-    .where(eq(transactionsTable.id, id))
+    .where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId)))
     .returning();
 
   if (!updated) return res.status(404).json({ error: "Transaction not found" });
@@ -173,7 +177,8 @@ router.patch("/transactions/:id", async (req, res) => {
 // DELETE
 router.delete("/transactions/:id", async (req, res) => {
   const { id } = DeleteTransactionParams.parse(req.params);
-  const [deleted] = await db.delete(transactionsTable).where(eq(transactionsTable.id, id)).returning();
+  const userId = req.user!.id;
+  const [deleted] = await db.delete(transactionsTable).where(and(eq(transactionsTable.id, id), eq(transactionsTable.userId, userId))).returning();
   if (!deleted) return res.status(404).json({ error: "Transaction not found" });
   res.status(204).send();
 });
