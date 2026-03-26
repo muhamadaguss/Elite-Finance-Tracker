@@ -10,6 +10,7 @@ import Categories from "@/pages/categories";
 import Analytics from "@/pages/analytics";
 import Assets from "@/pages/assets";
 import Import from "@/pages/import";
+import ReceiptScan from "@/pages/receipt";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <Route path="/analytics" component={Analytics} />
       <Route path="/assets" component={Assets} />
+      <Route path="/receipt" component={ReceiptScan} />
       <Route path="/import" component={Import} />
       <Route component={NotFound} />
     </Switch>

@@ -8,6 +8,7 @@ import {
   PieChart, 
   Wallet, 
   UploadCloud,
+  ScanLine,
   LogOut,
   Menu,
   X
@@ -20,6 +21,7 @@ const navItems = [
   { icon: Tags, label: "Categories", href: "/categories" },
   { icon: PieChart, label: "Analytics", href: "/analytics" },
   { icon: Wallet, label: "Assets", href: "/assets" },
+  { icon: ScanLine, label: "Scan Struk", href: "/receipt" },
   { icon: UploadCloud, label: "Import", href: "/import" },
 ];
 
