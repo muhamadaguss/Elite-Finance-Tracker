@@ -152,6 +152,7 @@ export default function Dashboard() {
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="amount"
+                      nameKey="categoryName"
                       stroke="none"
                     >
                       {summary?.topCategories.map((entry, index) => (
